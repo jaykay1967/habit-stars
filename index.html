@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Habit Stars">
+<meta name="theme-color" content="#F3F5FB">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<title>Habit Stars</title>
+<style>
+  :root { --navy:#14295C; --gold:#F4C22B; --goldd:#DDA600; --ink:#14213D; --muted:#5B6684; --line:rgba(20,41,92,.3); --panel:#CBD7F1; --bg:#F3F5FB; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family:-apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, "Segoe UI", sans-serif;
+    -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; overscroll-behavior:none; }
+  #app { position:fixed; inset:0; display:flex; flex-direction:column;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  #top { flex:1.2; display:flex; flex-direction:column; min-height:0; min-width:0; }
+  #bottom { flex:1; display:flex; flex-direction:column; min-height:0; min-width:0; padding:6px 8px; gap:6px; box-sizing:border-box; }
+  .divider { height:2px; background:rgba(20,41,92,.15); flex:none; }
+  @media (min-width:700px) and (orientation:landscape) {
+    #app { flex-direction:row; } #top, #bottom { flex:1; } .divider { width:2px; height:auto; }
+  }
+  button { font:inherit; border:0; background:none; color:inherit; padding:0; cursor:pointer; }
+  button:disabled { opacity:.2; cursor:default; }
+
+  /* Fit-to-space: content is laid out wider then scaled down, so nothing scrolls */
+  .fit { flex:1; position:relative; overflow:hidden; min-height:0; }
+  .fit > .inner { position:absolute; left:0; top:0; transform-origin:0 0; box-sizing:border-box; }
+  .pad { padding:6px 8px; }
+  .stack > * + * { margin-top:6px; }
+
+  .hdr { position:relative; border-radius:14px; overflow:hidden; color:#fff; text-align:center; padding:10px 6px;
+    background:linear-gradient(90deg,#0C1C44,#14295C,#0C1C44); }
+  .hdr h1 { position:relative; margin:0; font-size:25px; font-weight:800; }
+  .tag { position:relative; font-family:"Dancing Script", cursive; font-size:21px; }
+  .uline { position:relative; width:120px; height:3px; border-radius:2px; background:var(--gold); margin:2px auto 0; }
+  .uline.sm { width:70px; margin-top:4px; }
+  .spk { position:absolute; }
+
+  .wish { display:flex; gap:8px; align-items:center; border:1.5px solid var(--gold); border-radius:12px;
+    background:linear-gradient(90deg,#FFF4D1,#FFE89A); padding:8px 10px; cursor:pointer; }
+  .we { font-size:24px; } .wl { font-size:10px; font-weight:800; color:var(--goldd); letter-spacing:1px; }
+  .wt { font-size:13px; font-weight:600; color:var(--navy); line-height:1.25; }
+
+  .wnav { display:flex; align-items:center; }
+  .wnav span { flex:1; text-align:center; font-weight:600; color:var(--navy); font-size:14px; }
+  .wnav button, .arr { width:36px; height:36px; font-size:26px; font-weight:700; color:var(--navy); border-radius:50%; }
+
+  .tbl { border:2px solid var(--navy); border-radius:12px; overflow:hidden; background:#fff; }
+  .row { display:grid; grid-template-columns:122px repeat(7,1fr) 44px; min-height:48px; border-top:1px solid var(--line); }
+  .row.head { border-top:0; min-height:0; }
+  .hcell { background:#BCC9E6; color:var(--navy); font-weight:700; font-size:17px; display:flex; align-items:center; justify-content:center; padding:8px 0; }
+  .dcell { background:var(--navy); color:#fff; font-weight:700; font-size:12px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; border-left:1px solid rgba(255,255,255,.25); white-space:nowrap; }
+  .dcell.wk { font-size:10px; line-height:11px; text-align:center; }
+  .dcell i { width:5px; height:5px; border-radius:50%; background:var(--gold); margin-top:2px; }
+  .lab { display:flex; align-items:center; gap:4px; padding:4px 5px; }
+  .em { font-size:22px; }
+  .lab b { display:block; font-size:12px; line-height:13px; color:var(--ink); }
+  .lab small { display:block; font-size:9.5px; line-height:11px; color:var(--muted); font-style:italic; }
+  .cell { border-left:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
+  .cell.today { background:rgba(244,194,43,.12); }
+  .cell svg { transition:transform .25s cubic-bezier(.3,1.6,.5,1); }
+  .cell:active svg { transform:scale(.8); }
+  .cnt { border-left:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy); font-size:14px; }
+
+  .foot { display:grid; grid-template-columns:1fr 1.05fr 1fr; gap:6px; }
+  .box { border-radius:12px; padding:8px; font-size:11px; }
+  .goal, .rew { background:var(--panel); border:1.5px solid var(--line); }
+  .goal b, .rew b { color:var(--navy); font-size:12px; }
+  .gl { display:flex; align-items:center; gap:4px; margin:4px 0; font-size:10.5px; line-height:12px; }
+  .cheer { background:var(--navy); position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .ct { position:relative; font-family:"Dancing Script", cursive; color:#fff; font-size:24px; line-height:1.05; text-align:center; }
+  .rew { text-align:center; } .rew i { display:block; font-size:10px; margin-bottom:2px; }
+  .rw { display:flex; align-items:center; gap:4px; width:100%; text-align:left; font-size:10px; font-style:italic; padding:2px 0; }
+  .ck { flex:none; width:15px; height:15px; border:1.5px solid var(--navy); border-radius:4px; background:#fff; color:#fff; font-size:10px;
+    font-weight:700; display:flex; align-items:center; justify-content:center; font-style:normal; }
+  .ck.on { background:var(--navy); }
+
+  .tabs, .chips { display:flex; gap:6px; overflow-x:auto; flex:none; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar, .chips::-webkit-scrollbar { display:none; }
+  .pill { --pc:#14295C; flex:none; border:1px solid var(--pc); color:var(--pc); background:#fff; border-radius:999px; padding:6px 12px; font-size:13px; font-weight:600; }
+  .pill.sel { background:var(--pc); color:#fff; }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px; box-sizing:border-box; }
+  .panel + .panel { margin-top:6px; }
+  .ph { display:flex; align-items:center; gap:6px; }
+  .ph h2 { flex:1; margin:0; font-size:18px; font-weight:800; color:var(--navy); }
+  .cl { font-size:13px; font-weight:600; color:var(--navy); }
+  .frow { display:flex; align-items:center; margin-top:4px; }
+  .fl { width:122px; flex:none; } .fl b { display:block; font-size:13px; } .fl small { font-size:10px; color:var(--muted); }
+  .emo { flex:1; height:46px; margin:2px; border:1px solid rgba(20,41,92,.15); border-radius:12px; font-size:22px; }
+  .emo.sel { border:2px solid var(--c); background:color-mix(in srgb, var(--c) 20%, transparent); font-size:27px; }
+  .emo.dim { opacity:.55; }
+  .wrow { display:flex; align-items:center; gap:10px; margin-top:8px; }
+  .btn-water { background:#29A3D6; color:#fff; border-radius:20px; padding:9px 16px; font-weight:700; font-size:15px; }
+  .wv { font-size:18px; font-weight:800; color:var(--navy); }
+  .link { color:var(--navy); font-weight:700; padding:6px; font-size:14px; }
+  .muted { color:var(--muted); font-size:12px; }
+  .ver { color:var(--muted); font-size:11px; text-align:center; margin-top:6px; }
+
+  .prog { flex:1; display:flex; flex-direction:column; gap:8px; min-height:0; }
+  .chartbox { flex:1; min-height:80px; display:flex; }
+  .scr { flex:1; overflow-x:auto; overflow-y:hidden; }
+
+  #install { position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom)); background:var(--navy); color:#fff;
+    border-radius:16px; padding:14px 16px; box-shadow:0 8px 30px rgba(0,0,0,.3); font-size:15px; line-height:1.4; z-index:10; }
+  #install b { color:var(--gold); }
+  #install button { float:right; color:var(--gold); font-weight:700; margin-left:10px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="top"></section>
+  <div class="divider"></div>
+  <section id="bottom"></section>
+</div>
+<div id="install" hidden>
+  <button data-act="install-close">Got it</button>
+  To install Habit Stars, tap the <b>Share</b> button <span aria-hidden="true">⬆︎</span> then <b>Add to Home Screen</b>.
+</div>
+
+<script>
+"use strict";
+// ---------------- Content ----------------
+const HABITS = [
+  ["Sleep 8 hours", "Get a good night's sleep", "🛏️"],
+  ["Drink 2 litres of water", "Stay hydrated", "🥛"],
+  ["Take Tablets", "Keep on track", "💊"],
+  ["Rest", "Take time to relax", "🛋️"],
+  ["Wellbeing Walk", "Fresh air & steps", "🚶‍♀️"],
+  ["Gym Workout", "Stay strong", "🏋️‍♀️"],
+  ["Eat Healthily", "Nourish my body", "🥗"],
+];
+const WATER = 1;      // index of the water habit
+const GOAL = 5;       // stars needed per day
+const FEELINGS = [
+  ["Worry", "calm → very worried", ["😌", "🙂", "😟", "😰"], "#E0703F"],
+  ["Physical strength", "weak → strong", ["😩", "😐", "🙂", "💪"], "#3B7BDB"],
+  ["Positivity", "low → upbeat", ["😞", "😐", "🙂", "😄"], "#E5A800"],
+  ["Calmness", "tense → serene", ["😣", "😐", "😌", "🧘"], "#2FA37C"],
+  ["Stuffy head", "clear → very stuffy", ["😀", "🙂", "🤧", "🥴"], "#9561D1"],
+];
+const REWARDS = ["Treat myself", "Do something I enjoy", "Feel great! ☺"];
+const WISHES = [
+  "Every star today is a step towards watching the grandchildren grow up.",
+  "A walk today keeps you moving for all the adventures still to come.",
+  "Strong legs today mean chasing the grandkids round the garden tomorrow.",
+  "Your tablets keep you on track for every birthday, graduation and wedding ahead.",
+  "Happiness grows from small, kind choices — and today is full of them.",
+  "Each glass of water is a small gift to the future you.",
+  "Rest isn't lazy — it's how you recharge for the people you love.",
+  "Every healthy meal is fuel for many more years of family hugs.",
+  "The gym builds more than muscle — it builds your independence.",
+  "Your children and grandchildren want you around for a long, long time. Look after you.",
+  "Mobile and strong for as long as possible — one habit at a time.",
+  "A good night's sleep is the foundation of a happy day.",
+  "Small steps today, big memories tomorrow.",
+  "You're doing this for every school play, every first step, every family Sunday.",
+  "Being strong means being free to go where you want, when you want.",
+  "Joy is a habit too — notice one good thing today.",
+  "Picture the grandkids' faces when you keep up with them. That's the goal.",
+  "Missed a star? Tomorrow is a fresh start. Be kind to yourself.",
+  "Every walk adds miles to the journey of watching your family grow.",
+  "Healthy habits are a love letter to the people who'll need you for years.",
+  "Stay happy, stay moving, stay strong — stay you.",
+  "Happiness, family, freedom: that's what every star is for.",
+];
+const GOLD = "#F4C22B", GOLDD = "#DDA600", NAVY = "#14295C";
+
+// ---------------- Storage (all on this phone) ----------------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+
+// ---------------- Dates ----------------
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const pad = (n) => String(n).padStart(2, "0");
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromIso = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const monday = (d) => addDays(d, -((d.getDay() + 6) % 7));
+const dayStart = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()); };
+const dm = (d) => `${d.getDate()} ${MON[d.getMonth()]}`;
+const dow = (d) => DOW[(d.getDay() + 6) % 7];
+const dayNo = (d) => Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5);
+const same = (a, b) => +a === +b;
+
+let today = dayStart();
+let startIso = store.get("hs_start", null);
+if (!startIso) { startIso = iso(today); store.set("hs_start", startIso); }
+const start = () => fromIso(startIso);
+
+const ui = { week: monday(today), cap: today, tab: "today", mode: "feelings", hidden: new Set(), wish: 0, undo: 0 };
+
+function entry(d) {
+  const e = store.get("hs_d_" + iso(d), {});
+  return {
+    h: HABITS.map((_, i) => !!(e.h && e.h[i])),
+    r: FEELINGS.map((_, i) => (e.r && e.r[i]) || 0),
+    w: e.w || 0,
+  };
+}
+function save(d, e) { store.set("hs_d_" + iso(d), { h: e.h.map((b) => (b ? 1 : 0)), r: e.r, w: e.w }); }
+const stars = (e) => e.h.filter(Boolean).length;
+const rewards = (w) => store.get("hs_w_" + iso(w), 0);
+
+// ---------------- Stars ----------------
+function starPts(cx, cy, R) {
+  const p = [];
+  for (let i = 0; i < 10; i++) {
+    const r = i % 2 ? R * 0.48 : R, a = -Math.PI / 2 + (i * Math.PI) / 5;
+    p.push((cx + r * Math.cos(a)).toFixed(1) + "," + (cy + r * Math.sin(a)).toFixed(1));
+  }
+  return p.join(" ");
+}
+const STAR = starPts(50, 53, 44);
+const starSvg = (on, size) =>
+  `<svg viewBox="0 0 100 100" width="${size}" height="${size}"><polygon points="${STAR}" fill="${on ? GOLD : "none"}" stroke="${on ? GOLDD : GOLD}" stroke-width="8" stroke-linejoin="round"/></svg>`;
+const sparkles = () =>
+  [[6, 30, 14], [13, 76, 18], [4, 86, 6], [16, 14, 7], [92, 26, 14], [87, 74, 18], [96, 86, 7]]
+    .map(([x, y, s]) => `<svg class="spk" style="left:calc(${x}% - ${s / 2}px);top:calc(${y}% - ${s / 2}px)" width="${s}" height="${s}" viewBox="0 0 100 100"><polygon points="${STAR}" fill="${GOLD}"/></svg>`)
+    .join("");
+
+// ---------------- Top half: the star chart ----------------
+function renderTop() {
+  const days = [...Array(7)].map((_, i) => addDays(ui.week, i));
+  const thisWeek = monday(today);
+  const isThis = same(ui.week, thisWeek);
+  const fut = (d) => d > today;
+  const ents = days.map(entry);
+  const wish = WISHES[(dayNo(today) + ui.wish) % WISHES.length];
+
+  let h = `<div class="fit"><div class="inner pad stack">`;
+  h += `<header class="hdr">${sparkles()}<h1>My Habit Star Chart</h1><div class="tag">Small steps. Big difference.</div><div class="uline"></div></header>`;
+  h += `<div class="wish" data-act="wish"><span class="we">🌟</span><div><div class="wl">MY GOLDEN WISH</div><div class="wt">${wish}</div></div></div>`;
+  h += `<div class="wnav"><button data-act="wk" data-n="-1" ${ui.week <= monday(start()) ? "disabled" : ""}>‹</button>` +
+       `<span>${isThis ? "This week · " : ""}${dm(days[0])} – ${dm(days[6])}</span>` +
+       `<button data-act="wk" data-n="1" ${isThis ? "disabled" : ""}>›</button></div>`;
+
+  h += `<div class="tbl"><div class="row head"><div class="hcell">Habit</div>`;
+  days.forEach((d) => { h += `<div class="dcell">${dow(d)}${same(d, today) ? "<i></i>" : ""}</div>`; });
+  h += `<div class="dcell wk">This<br>Week</div></div>`;
+  HABITS.forEach(([t, s, e], i) => {
+    h += `<div class="row"><div class="lab"><span class="em">${e}</span><div><b>${t}</b><small>${s}</small></div></div>`;
+    days.forEach((d, k) => {
+      h += `<button class="cell${same(d, today) ? " today" : ""}" data-act="star" data-d="${iso(d)}" data-i="${i}" ${fut(d) ? "disabled" : ""} aria-label="${t} ${dow(d)}">${starSvg(ents[k].h[i], 30)}</button>`;
+    });
+    h += `<div class="cnt">${ents.filter((x) => x.h[i]).length}/7</div></div>`;
+  });
+  h += `</div>`;
+
+  const met = days.filter((d, k) => !fut(d) && stars(ents[k]) >= GOAL).length;
+  const ts = stars(entry(today));
+  const cheer = ts === HABITS.length ? "Superstar!" : ts >= GOAL ? "Goal met today!" : "You've Got This!";
+  const rm = rewards(ui.week);
+  h += `<div class="foot">
+    <div class="box goal"><b>This Week's Goal</b><div class="gl">${starSvg(true, 26)}<span>Aim for at least ${GOAL} of ${HABITS.length} habits each day!</span></div><b>Met: ${met}/7 days</b></div>
+    <div class="box cheer">${sparkles()}<div class="ct">${cheer}</div><div class="uline sm"></div></div>
+    <div class="box rew"><b>Rewards</b><i>If I meet my goal…</i>${REWARDS.map((r, i) => {
+      const on = (rm >> i) & 1;
+      return `<button class="rw" data-act="rew" data-i="${i}"><span class="ck${on ? " on" : ""}">${on ? "✓" : ""}</span>${r}</button>`;
+    }).join("")}</div></div>`;
+  h += `</div></div>`;
+  return h;
+}
+
+// ---------------- Bottom half ----------------
+function renderBottom() {
+  let h = `<div class="tabs">
+    <button class="pill${ui.tab === "today" ? " sel" : ""}" data-act="tab" data-t="today">😊 How I feel today</button>
+    <button class="pill${ui.tab === "progress" ? " sel" : ""}" data-act="tab" data-t="progress">📈 My progress</button></div>`;
+  if (ui.tab === "today") h += `<div class="fit"><div class="inner">${feelingsHtml()}${waterHtml()}<div class="ver">Habit Stars · updates itself whenever it opens</div></div></div>`;
+  else h += progressHtml();
+  return h;
+}
+
+function feelingsHtml() {
+  const d = ui.cap, e = entry(d);
+  const lbl = same(d, today) ? "Today" : same(d, addDays(today, -1)) ? "Yesterday" : `${dow(d)} ${dm(d)}`;
+  let h = `<div class="panel"><div class="ph"><h2>How am I feeling?</h2>
+    <button class="arr" data-act="cap" data-n="-1" ${d <= start() ? "disabled" : ""}>‹</button><span class="cl">${lbl}</span>
+    <button class="arr" data-act="cap" data-n="1" ${d >= today ? "disabled" : ""}>›</button></div>`;
+  FEELINGS.forEach(([n, sc, em, c], i) => {
+    h += `<div class="frow"><div class="fl"><b>${n}</b><small>${sc}</small></div>`;
+    em.forEach((x, k) => {
+      const sel = e.r[i] === k + 1, dim = e.r[i] && !sel;
+      h += `<button class="emo${sel ? " sel" : ""}${dim ? " dim" : ""}" style="--c:${c}" data-act="rate" data-i="${i}" data-l="${k + 1}">${x}</button>`;
+    });
+    h += `</div>`;
+  });
+  return h + `</div>`;
+}
+
+function waterHtml() {
+  const w = entry(today).w, left = 2000 - w;
+  return `<div class="panel"><div class="ph"><h2>💧 Water today</h2><span class="wv">${(w / 1000).toFixed(2)} L</span></div>
+    <div class="wrow"><button class="btn-water" data-act="water">💧 +½ glass</button>
+    ${ui.undo > 0 ? `<button class="link" data-act="undo">Undo</button>` : ""}
+    <span class="muted">${left > 0 ? `${(left / 1000).toFixed(2)} L to go` : "2 litres reached! ⭐"}</span></div></div>`;
+}
+
+const MODES = [["feelings", "Feelings"], ["stars", "Stars ⭐"], ["water", "Water"]];
+const CAPTIONS = {
+  feelings: "Higher = more of that feeling. Tap a feeling to hide or show it.",
+  stars: `Stars earned each day. Dashed line = daily goal of ${GOAL}.`,
+  water: "Water logged with the +½ glass button. Dashed line = 2 litres.",
+};
+function progressHtml() {
+  let h = `<div class="panel prog"><div class="ph"><h2>My Progress</h2><span class="muted">since ${dm(start())}</span></div>
+    <div class="chips">${MODES.map(([k, l]) => `<button class="pill${ui.mode === k ? " sel" : ""}" data-act="mode" data-m="${k}">${l}</button>`).join("")}</div>
+    <div id="chartBox" class="chartbox"></div>`;
+  if (ui.mode === "feelings") {
+    h += `<div class="chips">${FEELINGS.map(([n, , , c], i) => `<button class="pill${ui.hidden.has(i) ? "" : " sel"}" style="--pc:${c}" data-act="hide" data-i="${i}">● ${n}</button>`).join("")}</div>`;
+  }
+  return h + `<div class="muted">${CAPTIONS[ui.mode]}</div></div>`;
+}
+
+function chartSpec(days) {
+  const ents = days.map(entry);
+  if (ui.mode === "feelings") {
+    return { yMin: 1, yMax: 4, ref: null, ticks: [[1, "Low"], [2, ""], [3, ""], [4, "High"]],
+      series: FEELINGS.map((f, i) => ui.hidden.has(i) ? null : { bar: false, color: f[3], v: ents.map((e) => e.r[i] || null) }).filter(Boolean) };
+  }
+  if (ui.mode === "stars") {
+    return { yMin: 0, yMax: HABITS.length, ref: GOAL, ticks: [...Array(HABITS.length + 1)].map((_, i) => [i, String(i)]),
+      series: [{ bar: true, color: GOLD, v: ents.map(stars) }] };
+  }
+  const v = ents.map((e) => (e.w ? e.w / 1000 : null));
+  const mx = Math.max(3, Math.ceil(Math.max(0, ...v.filter((x) => x != null)) * 2) / 2);
+  return { yMin: 0, yMax: mx, ref: 2, ticks: [[0, "0L"], [1, "1L"], [2, "2L"], [mx, mx + "L"]],
+    series: [{ bar: true, color: "#29A3D6", v }] };
+}
+
+function drawChart() {
+  const box = document.getElementById("chartBox");
+  if (!box) return;
+  const days = [];
+  for (let d = start(); d <= today; d = addDays(d, 1)) days.push(d);
+  const spec = chartSpec(days);
+  const H = box.clientHeight, axisW = 34, dw = 36;
+  const W = Math.max(box.clientWidth - axisW, days.length * dw);
+  const top = 10, bottom = H - 22;
+  const y = (v) => bottom - ((Math.min(Math.max(v, spec.yMin), spec.yMax) - spec.yMin) / (spec.yMax - spec.yMin)) * (bottom - top);
+  const font = `font-size="10" font-family="-apple-system,Roboto,sans-serif"`;
+
+  let axis = `<svg width="${axisW}" height="${H}">`;
+  spec.ticks.forEach(([v, l]) => { if (l) axis += `<text x="${axisW - 4}" y="${y(v) + 3.5}" text-anchor="end" fill="#5B6684" ${font}>${l}</text>`; });
+  axis += `</svg>`;
+
+  let s = `<svg width="${W}" height="${H}">`;
+  spec.ticks.forEach(([v]) => { s += `<line x1="0" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(20,41,92,.1)"/>`; });
+  days.forEach((d, i) => {
+    const cx = dw * i + dw / 2, isT = same(d, today);
+    if (isT) s += `<rect x="${dw * i + 2}" y="${top - 6}" width="${dw - 4}" height="${H - top + 6}" rx="8" fill="rgba(244,194,43,.15)"/>`;
+    const l = i === 0 || d.getDate() === 1 ? dm(d) : String(d.getDate());
+    s += `<text x="${cx}" y="${bottom + 16}" text-anchor="middle" fill="${isT ? NAVY : "#5B6684"}" ${isT ? 'font-weight="700"' : ""} ${font}>${l}</text>`;
+  });
+  if (spec.ref != null) s += `<line x1="0" x2="${W}" y1="${y(spec.ref)}" y2="${y(spec.ref)}" stroke="${GOLDD}" stroke-width="2" stroke-dasharray="7 5"/>`;
+  const lines = spec.series.filter((x) => !x.bar);
+  let li = 0;
+  spec.series.forEach((ser) => {
+    if (ser.bar) {
+      const bw = dw * 0.56;
+      ser.v.forEach((v, i) => { if (v != null && v > spec.yMin) s += `<rect x="${dw * i + (dw - bw) / 2}" y="${y(v)}" width="${bw}" height="${bottom - y(v)}" rx="4" fill="${ser.color}"/>`; });
+    } else {
+      const j = (li++ - (lines.length - 1) / 2) * 3;
+      const pts = ser.v.map((v, i) => (v == null ? null : [dw * i + dw / 2 + j, y(v)]));
+      pts.forEach((p, i) => { const q = pts[i + 1]; if (p && q) s += `<line x1="${p[0]}" y1="${p[1]}" x2="${q[0]}" y2="${q[1]}" stroke="${ser.color}" stroke-width="2.5" stroke-linecap="round"/>`; });
+      pts.forEach((p) => { if (p) s += `<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#fff"/><circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${ser.color}"/>`; });
+    }
+  });
+  s += `</svg>`;
+  box.innerHTML = `<div style="flex:none">${axis}</div><div class="scr" id="scr">${s}</div>`;
+  const scr = document.getElementById("scr");
+  scr.scrollLeft = scr.scrollWidth;
+}
+
+// ---------------- Layout ----------------
+function fit(el) {
+  const inner = el.firstElementChild;
+  const W = el.clientWidth, H = el.clientHeight;
+  if (!W || !H || !inner) return;
+  let s = 1;
+  for (; s > 0.45; s -= 0.02) {
+    inner.style.width = W / s + "px";
+    if (inner.scrollHeight * s <= H) break;
+  }
+  inner.style.transform = `scale(${s})`;
+}
+function layout() {
+  document.querySelectorAll(".fit").forEach(fit);
+  drawChart();
+}
+function render() {
+  const t = dayStart();
+  if (!same(t, today)) {
+    if (same(ui.cap, today)) ui.cap = t;
+    if (same(ui.week, monday(today))) ui.week = monday(t);
+    today = t;
+    ui.undo = 0;
+  }
+  document.getElementById("top").innerHTML = renderTop();
+  document.getElementById("bottom").innerHTML = renderBottom();
+  layout();
+}
+
+// ---------------- Taps ----------------
+document.addEventListener("click", (ev) => {
+  const b = ev.target.closest("[data-act]");
+  if (!b || b.disabled) return;
+  const n = +b.dataset.n, i = +b.dataset.i;
+  switch (b.dataset.act) {
+    case "star": { const d = fromIso(b.dataset.d), e = entry(d); e.h[i] = !e.h[i]; save(d, e); break; }
+    case "wk": ui.week = addDays(ui.week, 7 * n); break;
+    case "wish": ui.wish++; break;
+    case "rew": store.set("hs_w_" + iso(ui.week), rewards(ui.week) ^ (1 << i)); break;
+    case "tab": ui.tab = b.dataset.t; break;
+    case "cap": ui.cap = addDays(ui.cap, n); break;
+    case "rate": { const e = entry(ui.cap), l = +b.dataset.l; e.r[i] = e.r[i] === l ? 0 : l; save(ui.cap, e); break; }
+    case "water": {
+      const e = entry(today), before = e.w;
+      e.w += 125;
+      if (before < 2000 && e.w >= 2000) e.h[WATER] = true;   // reached 2 litres: tick the water star
+      save(today, e); ui.undo++;
+      break;
+    }
+    case "undo": { const e = entry(today); e.w = Math.max(0, e.w - 125); save(today, e); ui.undo = Math.max(0, ui.undo - 1); break; }
+    case "mode": ui.mode = b.dataset.m; break;
+    case "hide": ui.hidden.has(i) ? ui.hidden.delete(i) : ui.hidden.add(i); break;
+    case "install-close": document.getElementById("install").hidden = true; store.set("hs_hide_install", 1); return;
+  }
+  render();
+});
+
+let rt;
+window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(layout, 80); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
+
+// Show "Add to Home Screen" help on iPhone Safari until installed
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+if (isIOS && !navigator.standalone && !store.get("hs_hide_install", 0)) document.getElementById("install").hidden = false;
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+render();
+</script>
+</body>
+</html>

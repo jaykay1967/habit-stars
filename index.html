@@ -53,17 +53,17 @@
   .wnav button, .arr { width:36px; height:36px; font-size:26px; font-weight:700; color:var(--navy); border-radius:50%; }
 
   .tbl { border:2px solid var(--navy); border-radius:12px; overflow:hidden; background:#fff; }
-  .row { display:grid; grid-template-columns:122px repeat(7,1fr) 44px; min-height:48px; border-top:1px solid var(--line); }
+  .row { display:grid; grid-template-columns:130px repeat(7,1fr) 44px; min-height:36px; border-top:1px solid var(--line); }
   .row.head { border-top:0; min-height:0; }
   .hcell { background:#BCC9E6; color:var(--navy); font-weight:700; font-size:17px; display:flex; align-items:center; justify-content:center; padding:8px 0; }
   .dcell { background:var(--navy); color:#fff; font-weight:700; font-size:12px; display:flex; flex-direction:column; align-items:center;
     justify-content:center; border-left:1px solid rgba(255,255,255,.25); white-space:nowrap; }
   .dcell.wk { font-size:10px; line-height:11px; text-align:center; }
   .dcell i { width:5px; height:5px; border-radius:50%; background:var(--gold); margin-top:2px; }
-  .lab { display:flex; align-items:center; gap:4px; padding:4px 5px; }
-  .em { font-size:22px; }
-  .lab b { display:block; font-size:12px; line-height:13px; color:var(--ink); }
-  .lab small { display:block; font-size:9.5px; line-height:11px; color:var(--muted); font-style:italic; }
+  .lab { display:flex; align-items:center; gap:4px; padding:2px 4px; }
+  .em { font-size:17px; }
+  .lab b { display:block; font-size:11px; line-height:12px; color:var(--ink); }
+  .lab small { display:block; font-size:8.5px; line-height:10px; color:var(--muted); font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .cell { border-left:1px solid var(--line); display:flex; align-items:center; justify-content:center; }
   .cell.today { background:rgba(244,194,43,.12); }
   .cell svg { transition:transform .25s cubic-bezier(.3,1.6,.5,1); }
@@ -138,6 +138,8 @@ const HABITS = [
   ["Eat Healthily", "Nourish my body", "🥗"],
   ["Read a nice book", "Escape into a story", "📖"],
   ["Listen to great music", "Lift my mood", "🎶"],
+  ["Hot Tub", "Soak & unwind", "♨️"],
+  ["Together Time", "With the people I love", "💞"],
 ];
 const WATER = 1;      // index of the water habit
 const GOAL = 5;       // stars needed per day
@@ -174,6 +176,8 @@ const WISHES = [
   "Happiness, family, freedom: that's what every star is for.",
   "A good book is a little holiday for the mind — you've earned one today.",
   "Put on a song you love. Happiness counts as a healthy habit too.",
+  "A warm soak eases the joints that carry you to every family adventure.",
+  "Time together is the whole point — the memories are what the stars are for.",
 ];
 const GOLD = "#F4C22B", GOLDD = "#DDA600", NAVY = "#14295C";
 
@@ -255,7 +259,7 @@ function renderTop() {
   HABITS.forEach(([t, s, e], i) => {
     h += `<div class="row"><div class="lab"><span class="em">${e}</span><div><b>${t}</b><small>${s}</small></div></div>`;
     days.forEach((d, k) => {
-      h += `<button class="cell${same(d, today) ? " today" : ""}" data-act="star" data-d="${iso(d)}" data-i="${i}" ${fut(d) ? "disabled" : ""} aria-label="${t} ${dow(d)}">${starSvg(ents[k].h[i], 30)}</button>`;
+      h += `<button class="cell${same(d, today) ? " today" : ""}" data-act="star" data-d="${iso(d)}" data-i="${i}" ${fut(d) ? "disabled" : ""} aria-label="${t} ${dow(d)}">${starSvg(ents[k].h[i], 23)}</button>`;
     });
     h += `<div class="cnt">${ents.filter((x) => x.h[i]).length}/7</div></div>`;
   });

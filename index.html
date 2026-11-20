@@ -128,20 +128,24 @@
 <script>
 "use strict";
 // ---------------- Content ----------------
+// [title, subtitle, emoji, id] — stars are saved by id, so habits can be inserted anywhere
 const HABITS = [
-  ["Sleep 8 hours", "Get a good night's sleep", "🛏️"],
-  ["Drink 2 litres of water", "Stay hydrated", "🥛"],
-  ["Take Tablets", "Keep on track", "💊"],
-  ["Rest", "Take time to relax", "🛋️"],
-  ["Wellbeing Walk", "Fresh air & steps", "🚶‍♀️"],
-  ["Gym Workout", "Stay strong", "🏋️‍♀️"],
-  ["Eat Healthily", "Nourish my body", "🥗"],
-  ["Read a nice book", "Escape into a story", "📖"],
-  ["Listen to great music", "Lift my mood", "🎶"],
-  ["Hot Tub", "Soak & unwind", "♨️"],
-  ["Together Time", "With the people I love", "💞"],
+  ["Sleep 8 hours", "Get a good night's sleep", "🛏️", "sleep"],
+  ["Drink 2 litres of water", "Stay hydrated", "🥛", "water"],
+  ["Take Tablets", "Keep on track", "💊", "tablets"],
+  ["Blood Pressure Measurement", "Check & note it", "🩺", "bp"],
+  ["Rest", "Take time to relax", "🛋️", "rest"],
+  ["Wellbeing Walk", "Fresh air & steps", "🚶‍♀️", "walk"],
+  ["Gym Workout", "Stay strong", "🏋️‍♀️", "gym"],
+  ["Eat Healthily", "Nourish my body", "🥗", "eat"],
+  ["Read a nice book", "Escape into a story", "📖", "read"],
+  ["Listen to great music", "Lift my mood", "🎶", "music"],
+  ["Hot Tub", "Soak & unwind", "♨️", "hottub"],
+  ["Together Time", "With the people I love", "💞", "together"],
 ];
-const WATER = 1;      // index of the water habit
+// Order used before stars were saved by id. Never change this list.
+const LEGACY_ORDER = ["sleep", "water", "tablets", "rest", "walk", "gym", "eat", "read", "music", "hottub", "together"];
+const WATER = HABITS.findIndex((h) => h[3] === "water");
 const GOAL = 5;       // stars needed per day
 const FEELINGS = [
   ["Worry", "calm → very worried", ["😌", "🙂", "😟", "😰"], "#E0703F"],
@@ -211,12 +215,17 @@ const ui = { week: monday(today), cap: today, tab: "today", mode: "feelings", hi
 function entry(d) {
   const e = store.get("hs_d_" + iso(d), {});
   return {
-    h: HABITS.map((_, i) => !!(e.h && e.h[i])),
+    h: e.k ? HABITS.map((hb) => !!e.k[hb[3]])
+           : HABITS.map((hb) => { const i = LEGACY_ORDER.indexOf(hb[3]); return i >= 0 && !!(e.h && e.h[i]); }),
     r: FEELINGS.map((_, i) => (e.r && e.r[i]) || 0),
     w: e.w || 0,
   };
 }
-function save(d, e) { store.set("hs_d_" + iso(d), { h: e.h.map((b) => (b ? 1 : 0)), r: e.r, w: e.w }); }
+function save(d, e) {
+  const k = {};
+  HABITS.forEach((hb, i) => { if (e.h[i]) k[hb[3]] = 1; });
+  store.set("hs_d_" + iso(d), { k, r: e.r, w: e.w });
+}
 const stars = (e) => e.h.filter(Boolean).length;
 const rewards = (w) => store.get("hs_w_" + iso(w), 0);
 

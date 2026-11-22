@@ -148,11 +148,11 @@ const LEGACY_ORDER = ["sleep", "water", "tablets", "rest", "walk", "gym", "eat",
 const WATER = HABITS.findIndex((h) => h[3] === "water");
 const GOAL = 5;       // stars needed per day
 const FEELINGS = [
-  ["Worry", "calm → very worried", ["😌", "🙂", "😟", "😰"], "#E0703F"],
+  ["Worry", "very worried → calm", ["😰", "😟", "🙂", "😌"], "#E0703F"],
   ["Physical strength", "weak → strong", ["😩", "😐", "🙂", "💪"], "#3B7BDB"],
   ["Positivity", "low → upbeat", ["😞", "😐", "🙂", "😄"], "#E5A800"],
   ["Calmness", "tense → serene", ["😣", "😐", "😌", "🧘"], "#2FA37C"],
-  ["Stuffy head", "clear → very stuffy", ["😀", "🙂", "🤧", "🥴"], "#9561D1"],
+  ["Clear head", "very stuffy → clear", ["🥴", "🤧", "🙂", "😀"], "#9561D1"],
 ];
 const REWARDS = ["Treat myself", "Do something I enjoy", "Feel great! ☺"];
 const WISHES = [
@@ -217,14 +217,15 @@ function entry(d) {
   return {
     h: e.k ? HABITS.map((hb) => !!e.k[hb[3]])
            : HABITS.map((hb) => { const i = LEGACY_ORDER.indexOf(hb[3]); return i >= 0 && !!(e.h && e.h[i]); }),
-    r: FEELINGS.map((_, i) => (e.r && e.r[i]) || 0),
+    // Saves without rv pre-date the bad→good ordering: Worry (0) and the head scale (4) were reversed then
+    r: FEELINGS.map((_, i) => { const v = (e.r && e.r[i]) || 0; return v && !e.rv && (i === 0 || i === 4) ? 5 - v : v; }),
     w: e.w || 0,
   };
 }
 function save(d, e) {
   const k = {};
   HABITS.forEach((hb, i) => { if (e.h[i]) k[hb[3]] = 1; });
-  store.set("hs_d_" + iso(d), { k, r: e.r, w: e.w });
+  store.set("hs_d_" + iso(d), { k, r: e.r, w: e.w, rv: 2 });
 }
 const stars = (e) => e.h.filter(Boolean).length;
 const rewards = (w) => store.get("hs_w_" + iso(w), 0);
@@ -326,7 +327,7 @@ function waterHtml() {
 
 const MODES = [["feelings", "Feelings"], ["stars", "Stars ⭐"], ["water", "Water"]];
 const CAPTIONS = {
-  feelings: "Higher = more of that feeling. Tap a feeling to hide or show it.",
+  feelings: "Higher = better on every scale. Tap a feeling to hide or show it.",
   stars: `Stars earned each day. Dashed line = daily goal of ${GOAL}.`,
   water: "Water logged with the +½ glass button. Dashed line = 2 litres.",
 };
@@ -343,7 +344,7 @@ function progressHtml() {
 function chartSpec(days) {
   const ents = days.map(entry);
   if (ui.mode === "feelings") {
-    return { yMin: 1, yMax: 4, ref: null, ticks: [[1, "Low"], [2, ""], [3, ""], [4, "High"]],
+    return { yMin: 1, yMax: 4, ref: null, ticks: [[1, "Worse"], [2, ""], [3, ""], [4, "Better"]],
       series: FEELINGS.map((f, i) => ui.hidden.has(i) ? null : { bar: false, color: f[3], v: ents.map((e) => e.r[i] || null) }).filter(Boolean) };
   }
   if (ui.mode === "stars") {

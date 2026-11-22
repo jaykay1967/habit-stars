@@ -1,7 +1,7 @@
 {
-  "versionCode": 26,
-  "versionName": "1.26",
+  "versionCode": 27,
+  "versionName": "1.27",
   "apk": "https://raw.githubusercontent.com/jaykay1967/habit-stars/main/HabitStars.apk",
-  "watchVersionCode": 26,
+  "watchVersionCode": 27,
   "watchApk": "https://raw.githubusercontent.com/jaykay1967/habit-stars/main/HabitStarsWatch.apk"
 }
